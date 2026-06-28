@@ -1,0 +1,150 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Flight Booking & Payment</title>
+    <link rel="stylesheet" href="booking.css">
+    <script>
+        function calculateTotal() {
+            const destinationPrices = {
+                Delhi: 12000,
+                Mumbai: 15000,
+                Chennai: 11000,
+                Kolkata: 18000
+            };
+
+            const destination = document.getElementById('destination').value;
+            const seats = parseInt(document.getElementById('seats').value) || 0;
+            const total = destinationPrices[destination] * seats;
+            document.getElementById('totalAmount').value = total ? `₹${total}` : '';
+            document.getElementById('totalHidden').value = total || '';
+        }
+
+        function validateBookingForm(event) {
+            const name = document.getElementById('name').value.trim();
+            const email = document.getElementById('email').value.trim();
+            const entryPoint = document.getElementById('entryPoint').value;
+            const destination = document.getElementById('destination').value;
+            const seats = parseInt(document.getElementById('seats').value);
+
+            if (!name || !email || !entryPoint || !destination) {
+                event.preventDefault();
+                alert('Please fill in all required fields.');
+                return;
+            }
+
+            if (seats > 5) {
+                event.preventDefault();
+                alert('You cannot book more than 5 seats at a time.');
+            }
+        }
+
+        async function submitBookingForm(event) {
+            event.preventDefault();
+            const name = document.getElementById('name').value;
+            const email = document.getElementById('email').value;
+            const entryPoint = document.getElementById('entryPoint').value;
+            const destination = document.getElementById('destination').value;
+            const seats = parseInt(document.getElementById('seats').value);
+            const totalAmount = parseInt(document.getElementById('totalAmount').value.replace(/[^0-9]/g, ''));
+
+            try {
+                const response = await fetch('/book', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ name, email, entryPoint, destination, seats, totalAmount }),
+                });
+
+                if (response.ok) {
+                    const data = await response.json();
+                    alert('Booking successful! Proceed to payment.');
+                    document.getElementById('payment-section').style.display = 'block';
+                } else {
+                    const errorData = await response.json();
+                    alert(`Error: ${errorData.message || 'Unknown error'}`);
+                }
+            } catch (error) {
+                console.error('Fetch error:', error);
+                alert('An error occurred. Please try again later.');
+            }
+        }
+
+        function validatePaymentForm(event) {
+            const cardNumber = document.getElementById('cardNumber').value;
+            const expiry = document.getElementById('expiry').value;
+            const cvv = document.getElementById('cvv').value;
+
+            if (!/^[0-9]{16}$/.test(cardNumber)) {
+                event.preventDefault();
+                alert('Invalid card number. Please enter a 16-digit card number.');
+                return;
+            }
+
+            if (!/^(0[1-9]|1[0-2])\/[0-9]{2}$/.test(expiry)) {
+                event.preventDefault();
+                alert('Invalid expiry date. Please enter in MM/YY format.');
+                return;
+            }
+
+            if (!/^[0-9]{3}$/.test(cvv)) {
+                event.preventDefault();
+                alert('Invalid CVV. Please enter a 3-digit CVV.');
+                return;
+            }
+
+            alert('Successfully booked and paid for your flight!');
+        }
+    </script>
+</head>
+<body>
+    <div class="form-container">
+        <h2>Flight Booking & Payment</h2>
+        <form id="booking-form" onsubmit="validateBookingForm(event); submitBookingForm(event);">
+            <label for="name">Name:</label>
+            <input type="text" id="name" name="name" placeholder="Enter your full name" required>
+
+            <label for="email">Email:</label>
+            <input type="email" id="email" name="email" placeholder="Enter your email address" required>
+
+            <label for="entryPoint">Entry Point (Hyderabad):</label>
+            <input type="text" id="entryPoint" name="entryPoint" value="Hyderabad" readonly>
+
+            <label for="destination">Destination:</label>
+            <select id="destination" name="destination" onchange="calculateTotal()" required>
+                <option value="">--Select Destination--</option>
+                <option value="Delhi">Delhi</option>
+                <option value="Mumbai">Mumbai</option>
+                <option value="Chennai">Chennai</option>
+                <option value="Kolkata">Kolkata</option>
+            </select>
+
+            <label for="seats">Number of Seats:</label>
+            <input type="number" id="seats" name="seats" min="1" max="5" onchange="calculateTotal()" required>
+
+            <label for="totalAmount">Total Amount:</label>
+            <input type="text" id="totalAmount" name="totalAmount" readonly>
+            <input type="hidden" id="totalHidden" name="totalHidden">
+
+            <button type="submit">Proceed to Payment</button>
+        </form>
+
+        <div id="payment-section" style="display:none;">
+            <h3>Payment</h3>
+            <p>Total Amount: <span id="displayTotal">₹0</span></p>
+            <form onsubmit="validatePaymentForm(event);">
+                <label for="cardNumber">Card Number:</label>
+                <input type="text" id="cardNumber" name="cardNumber" maxlength="16" required>
+
+                <label for="expiry">Expiry Date (MM/YY):</label>
+                <input type="text" id="expiry" name="expiry" placeholder="MM/YY" required>
+
+                <label for="cvv">CVV:</label>
+                <input type="text" id="cvv" name="cvv" maxlength="3" required>
+
+                <button type="submit">Pay</button>
+            </form>
+        </div>
+    </div>
+</body>
+</html>
